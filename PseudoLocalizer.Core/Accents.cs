@@ -1,4 +1,7 @@
-﻿namespace PseudoLocalizer.Core
+﻿using System.Text;
+using System.Text.RegularExpressions;
+
+namespace PseudoLocalizer.Core
 {
     using System.Collections.Generic;
     using System.Linq;
@@ -104,25 +107,34 @@
             { '~', '\u02de' },
         };
 
+        private static readonly Regex PlaceholderExpr = new Regex(@"{\d+}");
+
         public static string Transform(string value)
         {
-            return new string(
-                value.ToCharArray()
-                    .Select(x => Transform(x))
-                    .ToArray());
+            var output = new StringBuilder(value.Length);
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] == '{')
+                {
+                    var match = PlaceholderExpr.Match(value, i);
+                    if (match.Success)
+                    {
+                        output.Append(match.Value);
+                        i += match.Length - 1;
+                        continue;
+                    }
+                }
+
+                output.Append(Transform(value[i]));
+            }
+
+            return output.ToString();
         }
 
         private static char Transform(char value)
         {
             char x;
-            if (Replacements.TryGetValue(value, out x))
-            {
-                return x;
-            }
-            else
-            {
-                return value;
-            }
+            return Replacements.TryGetValue(value, out x) ? x : value;
         }
     }
 }

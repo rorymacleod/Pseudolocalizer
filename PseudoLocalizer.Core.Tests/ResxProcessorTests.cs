@@ -8,6 +8,7 @@
     public class ResxProcessorTests
     {
         private const string Test1FileName = "Test1.resx";
+        private const string Test2FileName = "Test2.resx";
         private const string OutputFileName = "out.resx";
 
         [SetUp]
@@ -65,6 +66,24 @@
             Assert.That(transformed.Contains("<value>\u00d0\u00fb\u00f0\u00e9</value>"));
             Assert.That(!transformed.Contains("<value>Dude</value>"));
             Assert.That(transformed.Contains("<comment>Foo</comment>"));
+        }
+
+        [Test]
+        public void ShouldIgnorePlaceholdersWhenApplyingAccents()
+        {
+            using (var inputStream = new FileStream(Test2FileName, FileMode.Open, FileAccess.Read))
+            using (var outputStream = new FileStream(OutputFileName, FileMode.Create, FileAccess.Write))
+            {
+                var processor = new ResxProcessor();
+                processor.TransformString += (s, e) => { e.Value = Accents.Transform(e.Value); };
+                processor.Transform(inputStream, outputStream);
+            }
+
+            var transformed = File.ReadAllText(OutputFileName);
+            Assert.That(transformed, Is.StringContaining("<value>{0}Šţåŕţ</value>"));
+            Assert.That(transformed, Is.StringContaining("<value>Îñ{1}Ṁîððļé</value>"));
+            Assert.That(transformed, Is.StringContaining("<value>Éñð{99}</value>"));
+            Assert.That(transformed, Is.StringContaining("<value>Ñö þļåçéĥöļðéŕ{⓪</value>"));
         }
 
         [Test]

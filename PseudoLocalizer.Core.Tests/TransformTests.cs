@@ -47,5 +47,15 @@
             var message = "hello, world!";
             Assert.That(Underscores.Transform(message), Is.EqualTo(new string('_', message.Length)));
         }
+
+        [Test]
+        public void ShouldIgnorePlaceholdersWhenApplyingUnderscores()
+        {
+            Assert.That(Underscores.Transform("{0}hello, world"), Is.EqualTo("{0}____________"));
+            Assert.That(Underscores.Transform("hello, {1} world"), Is.EqualTo("_______{1}______"));
+            Assert.That(Underscores.Transform("hello, world{99}"), Is.EqualTo("____________{99}"));
+            Assert.That(Underscores.Transform("hello, world{0"), Is.EqualTo("______________"));
+        }
+
     }
 }
