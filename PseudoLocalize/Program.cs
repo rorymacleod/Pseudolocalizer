@@ -1,4 +1,6 @@
-﻿namespace PseudoLocalizer
+﻿using System.Linq;
+
+namespace PseudoLocalizer
 {
     using System;
     using System.Collections.Generic;
@@ -51,7 +53,9 @@
                 Console.WriteLine("The input files must be resource files in Resx file format.");
                 Console.WriteLine("The output will be written to a file next to the original, with .qps-ploc");
                 Console.WriteLine("appended to its name. For example, if the input file is X:\\Foo\\Bar.resx,");
-                Console.WriteLine("then the output file will be X:\\Foo\\Bar.qps-ploc.resx.");
+                Console.WriteLine("then the output file will be X:\\Foo\\Bar.qps-ploc.resx. If the input file");
+                Console.WriteLine("name already ends with a valid culture name (e.g. \"en\", \"es-MX\"), it is");
+                Console.WriteLine("replaced with .qps-ploc.");
                 Console.WriteLine();
                 Console.WriteLine("Options:");
                 Console.WriteLine("  /l  Make all words 30% longer, to ensure that there is room for translations.");
@@ -141,7 +145,22 @@
         {
             try
             {
-                var outputFileName = Path.Combine(Path.GetDirectoryName(inputFileName), Path.GetFileNameWithoutExtension(inputFileName) + ".qps-ploc" + Path.GetExtension(inputFileName));
+                var baseFileName = Path.GetFileNameWithoutExtension(inputFileName);
+                try
+                {
+                    var existingCulture = baseFileName.Split('.').LastOrDefault();
+                    if (existingCulture != null && !baseFileName.StartsWith(existingCulture) && 
+                        CultureInfo.CreateSpecificCulture(existingCulture).TwoLetterISOLanguageName != "iv")
+                    {
+                        baseFileName = baseFileName.Substring(0, baseFileName.LastIndexOf('.'));
+                    }
+                }
+                catch (CultureNotFoundException)
+                {
+                }
+                
+                var outputFileName = Path.Combine(Path.GetDirectoryName(inputFileName), baseFileName + 
+                    ".qps-ploc" + Path.GetExtension(inputFileName));
 
                 using (var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read))
                 using (var outputStream = new FileStream(outputFileName, FileMode.Create, FileAccess.Write))
