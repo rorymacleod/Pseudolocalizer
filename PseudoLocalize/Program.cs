@@ -33,6 +33,8 @@ namespace PseudoLocalizer
 
         public bool EnableUnderscores { get; set; }
 
+        public string OutputCulture { get; set; }
+
         public bool HasInputFiles
         {
             get { return _inputFiles.Count > 0; }
@@ -47,17 +49,19 @@ namespace PseudoLocalizer
             }
             else
             {
-                Console.WriteLine("Usage: PseudoLocalize [/l] [/a] [/b] [/m] [/u] file [file...]");
+                Console.WriteLine("Usage: PseudoLocalize [/o output-culture] [/l] [/a] [/b] [/m] [/u] file [file...]");
                 Console.WriteLine("Generates pseudo-localized versions of the specified input file(s).");
                 Console.WriteLine();
                 Console.WriteLine("The input files must be resource files in Resx file format.");
                 Console.WriteLine("The output will be written to a file next to the original, with .qps-ploc");
-                Console.WriteLine("appended to its name. For example, if the input file is X:\\Foo\\Bar.resx,");
+                Console.WriteLine("(or the output culture you specify) appended to its name. For example, if ");
+                Console.WriteLine("the input file is X:\\Foo\\Bar.resx,");
                 Console.WriteLine("then the output file will be X:\\Foo\\Bar.qps-ploc.resx. If the input file");
                 Console.WriteLine("name already ends with a valid culture name (e.g. \"en\", \"es-MX\"), it is");
                 Console.WriteLine("replaced with .qps-ploc.");
                 Console.WriteLine();
                 Console.WriteLine("Options:");
+                Console.WriteLine("  /o  Use the following string as the culture code in the output file name.");
                 Console.WriteLine("  /l  Make all words 30% longer, to ensure that there is room for translations.");
                 Console.WriteLine("  /a  Add accents on all letters so that non-localized text can be spotted.");
                 Console.WriteLine("  /b  Add brackets to show the start and end of each localized string.");
@@ -87,13 +91,24 @@ namespace PseudoLocalizer
             instance.EnableBrackets = false;
             instance.EnableMirror = false;
             instance.EnableUnderscores = false;
+            instance.OutputCulture = "qps-ploc";
 
-            foreach (var arg in args)
+            for (var i = 0; i < args.Length; i++)
             {
+                var arg = args[i];
                 if (arg.StartsWith("/", StringComparison.Ordinal) || arg.StartsWith("-", StringComparison.Ordinal))
                 {
                     switch (arg.Substring(1).ToUpperInvariant())
                     {
+                        case "O":
+                            var culture = args[i + 1];
+                            if (!string.IsNullOrEmpty(culture) && !culture.StartsWith("/", StringComparison.Ordinal))
+                            {
+                                instance.OutputCulture = culture;
+                                i++;
+                            }
+                            break;
+
                         case "L":
                             instance.EnableExtraLength = true;
                             instance.UseDefaultOptions = false;
@@ -160,7 +175,7 @@ namespace PseudoLocalizer
                 }
                 
                 var outputFileName = Path.Combine(Path.GetDirectoryName(inputFileName), baseFileName + 
-                    ".qps-ploc" + Path.GetExtension(inputFileName));
+                    "." + OutputCulture + Path.GetExtension(inputFileName));
 
                 using (var inputStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read))
                 using (var outputStream = new FileStream(outputFileName, FileMode.Create, FileAccess.Write))
